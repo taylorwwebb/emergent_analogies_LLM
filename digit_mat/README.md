@@ -51,4 +51,4 @@ and run the following R script:
 ```
 ./exp1_vs_exp2_stats.r
 ```
-Note that results for human participants and GPT-3 are already provided.
+Note that results for human participants and GPT-3 are already included in this repository.
