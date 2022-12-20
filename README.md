@@ -1,6 +1,6 @@
 # Emergent Analogical Reasoning in Large Language Models
 
-Code for the paper 'Emergent Analogical Reasoning in Large Language Models'. 
+Code for the paper [Emergent Analogical Reasoning in Large Language Models](https://arxiv.org/abs/2212.09196). 
 
 Code for each set of experiments, along with detailed instructions, are contained within separate directories.
 
