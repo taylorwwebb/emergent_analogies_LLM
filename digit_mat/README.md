@@ -6,11 +6,11 @@ python3 ./gen_problems.py
 python3 ./gen_4_5_rule_problems.py
 python3 ./combine_problems_1thru5.py
 ```
-Problems for experiment #1 (1-3 rule and logic problems) are contained in:
+Problems for experiment #1 (1-3 rule and logic problems, results in Figure 3 of paper) are contained in:
 ```
 ./all_problems.npz
 ```
-and problems for experiment #2 (1-5 rule problems) are contained in:
+and problems for experiment #2 (1-5 rule problems, results in Supplementary Figure S4) are contained in:
 ```
 ./all_problems_1thru5.npz
 ```
