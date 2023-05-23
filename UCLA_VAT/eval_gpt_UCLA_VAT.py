@@ -2,6 +2,7 @@ import openai
 import numpy as np
 import pandas as pd
 import builtins
+import time
 
 # GPT-3 settings
 openai.api_key = "FILL_IN_API_KEY_HERE"
@@ -24,30 +25,58 @@ all_category_correct_pred = []
 results_fname = './UCLA_VAT_results.npz'
 # Evaluate 
 N_prob = len(A)
+prob_order = np.arange(N_prob)
+np.random.shuffle(prob_order)
 for p in range(N_prob):
 	print(str(p+1) + ' of ' + str(N_prob) + '...')
-	prompt = A[p] + ' : ' + B[p] + ' :: ' + C[p] + ' : '
+	if p == 0:
+		prompt = A[prob_order[p]] + ' : ' + B[prob_order[p]] + ' :: ' + C[prob_order[p]] + ' : '
+	else:
+		prompt = context + '\n\n' + A[prob_order[p]] + ' : ' + B[prob_order[p]] + ' :: ' + C[prob_order[p]] + ' : '
 	# Correct answer
-	d_prompt = prompt + D[p]
-	response = openai.Completion.create(prompt=d_prompt, **kwargs)
+	d_prompt = prompt + D[prob_order[p]]
+	response = []
+	while len(response) == 0:
+		try:
+			response = openai.Completion.create(prompt=d_prompt, **kwargs)
+		except:
+			print('trying again...')
+			time.sleep(5)
 	first_token_ind = np.where(np.array(response['choices'][0]['logprobs']['text_offset']) <= len(prompt))[0][-1]
-	last_token_ind = np.where(np.array(response['choices'][0]['logprobs']['text_offset']) == len(d_prompt))[0][0]
-	d_avg_logprob = np.mean(response['choices'][0]['logprobs']['token_logprobs'][first_token_ind:last_token_ind])
+	if len(d_prompt) > np.array(response['choices'][0]['logprobs']['text_offset'])[0]:
+		d_avg_logprob = np.mean(response['choices'][0]['logprobs']['token_logprobs'][first_token_ind:])
+	else:
+		last_token_ind = np.where(np.array(response['choices'][0]['logprobs']['text_offset']) == len(d_prompt))[0][0]
+		d_avg_logprob = np.mean(response['choices'][0]['logprobs']['token_logprobs'][first_token_ind:last_token_ind])
 	# Foil
-	d_prime_prompt = prompt + D_prime[p]
-	response = openai.Completion.create(prompt=d_prime_prompt, **kwargs)
+	d_prime_prompt = prompt + D_prime[prob_order[p]]
+	response = []
+	while len(response) == 0:
+		try:
+			response = openai.Completion.create(prompt=d_prime_prompt, **kwargs)
+		except:
+			print('trying again...')
+			time.sleep(5)
 	first_token_ind = np.where(np.array(response['choices'][0]['logprobs']['text_offset']) <= len(prompt))[0][-1]
-	last_token_ind = np.where(np.array(response['choices'][0]['logprobs']['text_offset']) == len(d_prime_prompt))[0][0]
-	d_prime_avg_logprob = np.mean(response['choices'][0]['logprobs']['token_logprobs'][first_token_ind:last_token_ind])
+	if len(d_prime_prompt) > np.array(response['choices'][0]['logprobs']['text_offset'])[0]:
+		d_prime_avg_logprob = np.mean(response['choices'][0]['logprobs']['token_logprobs'][first_token_ind:])
+	else:
+		last_token_ind = np.where(np.array(response['choices'][0]['logprobs']['text_offset']) == len(d_prime_prompt))[0][0]
+		d_prime_avg_logprob = np.mean(response['choices'][0]['logprobs']['token_logprobs'][first_token_ind:last_token_ind])
 	# Correct
 	correct_pred = d_avg_logprob > d_prime_avg_logprob
-	if p < 20:
+	if prob_order[p] < 20:
 		all_synonym_correct_pred.append(correct_pred)
-	elif p >= 20 and p < 40:
+	elif prob_order[p] >= 20 and prob_order[p] < 40:
 		all_opposite_correct_pred.append(correct_pred)
-	elif p >= 40 and p < 60:
+	elif prob_order[p] >= 40 and prob_order[p] < 60:
 		all_function_correct_pred.append(correct_pred)
-	elif p >= 60:
+	elif prob_order[p] >= 60:
 		all_category_correct_pred.append(correct_pred)
+	# Add problem to context
+	if correct_pred:
+		context = d_prompt
+	else:
+		context = d_prime_prompt
 	# Save results
-	np.savez(results_fname, synonym=all_synonym_correct_pred, opposite=all_opposite_correct_pred, function=all_function_correct_pred, category=all_category_correct_pred, allow_pickle=True)
+	np.savez(results_fname, synonym=all_synonym_correct_pred, opposite=all_opposite_correct_pred, function=all_function_correct_pred, category=all_category_correct_pred, context=context, prob_order=prob_order, allow_pickle=True)
